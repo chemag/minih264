@@ -337,12 +337,12 @@ void H264E_set_vbv_state(
 #define MAX_LONG_TERM_FRAMES 8 // Max long-term frames count
 #endif
 
-#if !defined(MINIH264_ONLY_SIMD) && (defined(_M_X64) || defined(_M_ARM64) || defined(__x86_64__) || defined(__aarch64__))
+#if !defined(MINIH264_FORCE_PLAIN_C) && !defined(MINIH264_ONLY_SIMD) && (defined(_M_X64) || defined(_M_ARM64) || defined(__x86_64__) || defined(__aarch64__))
 /* x64 always have SSE2, arm64 always have neon, no need for generic code */
 #define MINIH264_ONLY_SIMD
 #endif /* SIMD checks... */
 
-#if (defined(_MSC_VER) && (defined(_M_IX86) || defined(_M_X64))) || ((defined(__i386__) || defined(__x86_64__)) && defined(__SSE2__))
+#if !defined(MINIH264_FORCE_PLAIN_C) && ((defined(_MSC_VER) && (defined(_M_IX86) || defined(_M_X64))) || ((defined(__i386__) || defined(__x86_64__)) && defined(__SSE2__)))
 #define H264E_ENABLE_SSE2 1
 #if defined(_MSC_VER)
 #include <intrin.h>
@@ -369,6 +369,9 @@ void H264E_set_vbv_state(
 #define __BIG_ENDIAN 1
 #elif defined(__linux__) || defined(__CYGWIN__)
 #include <endian.h>
+#elif defined(__ZEPHYR__)
+#define __BYTE_ORDER __BYTE_ORDER__
+#define __BIG_ENDIAN __ORDER_BIG_ENDIAN__
 #elif defined(__APPLE__)
 #include <libkern/OSByteOrder.h>
 #define __BYTE_ORDER BYTE_ORDER
@@ -384,6 +387,8 @@ void H264E_set_vbv_state(
 #define uintptr_t unsigned long
 #endif
 #if defined(__arm__) && defined(__clang__)
+#include <arm_acle.h>
+#elif defined(__arm__) && defined(__ZEPHYR__)
 #include <arm_acle.h>
 #elif defined(__arm__) && defined(__GNUC__) && !defined(__ARMCC_VERSION)
 static inline unsigned int __usad8(unsigned int val1, unsigned int val2)
@@ -469,7 +474,9 @@ typedef int int_u;
 #   define ABS(x)    ((x) >= 0 ? (x) : -(x))
 #endif
 
+#ifndef IS_ALIGNED
 #define IS_ALIGNED(p, n) (!((uintptr_t)(p) & (uintptr_t)((n) - 1)))
+#endif
 
 // bit-stream
 #if __BYTE_ORDER == __BIG_ENDIAN
