@@ -1,0 +1,4 @@
+name: minih264
+build:
+  cmake-ext: true
+  kconfig-ext: true
