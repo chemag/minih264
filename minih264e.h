@@ -6717,7 +6717,15 @@ static int sad_block(const pix_t *a, int a_stride, const pix_t *b, int b_stride,
     int r, c, sad = 0;
     for (r = 0; r < h; r++)
     {
-        for (c = 0; c < w; c++)
+        c = 0;
+#if defined(__arm__) && defined(__ARM_FEATURE_SIMD32)
+        // Four pixels per instruction with the DSP extension (ARMv6, ARMv7E-M)
+        for (; c + 4 <= w; c += 4)
+        {
+            sad = (int)__usada8((unsigned)*(const int_u *)(a + c), (unsigned)*(const int_u *)(b + c), (unsigned)sad);
+        }
+#endif
+        for (; c < w; c++)
         {
             int d = a[c] - b[c];
             sad += ABS(d);
